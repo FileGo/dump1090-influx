@@ -14,7 +14,7 @@ import (
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 )
 
-func readData(u *url.URL, httpClient *http.Client) (map[string]Stats, error) {
+func readData(u *url.URL, httpClient *http.Client) (map[string]stats, error) {
 	resp, err := httpClient.Get(u.String())
 	if err != nil {
 		return nil, fmt.Errorf("cannot retrieve HTTP data: %v", err)
@@ -30,7 +30,7 @@ func readData(u *url.URL, httpClient *http.Client) (map[string]Stats, error) {
 		return nil, fmt.Errorf("cannot read body text: %v", err)
 	}
 
-	var data map[string]Stats
+	var data map[string]stats
 	err = json.Unmarshal(buf, &data)
 	if err != nil {
 		return nil, fmt.Errorf("cannot unmarshal json: %v", err)
@@ -39,7 +39,7 @@ func readData(u *url.URL, httpClient *http.Client) (map[string]Stats, error) {
 	return data, nil
 }
 
-func writeData(data map[string]Stats, iClient influxdb2.Client, database string) {
+func writeData(data map[string]stats, iClient influxdb2.Client, database string) {
 	writeAPI := iClient.WriteAPIBlocking("", database)
 
 	for key, row := range data {

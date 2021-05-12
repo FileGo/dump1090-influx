@@ -10,18 +10,18 @@ type unixTime struct {
 	time.Time
 }
 
-type Stats struct {
+type stats struct {
 	Start         unixTime `json:"start"`
 	End           unixTime `json:"end"`
-	Local         Local    `json:"local"`
-	Remote        Remote   `json:"remote"`
-	CPR           CPR      `json:"cpr"`
+	Local         local    `json:"local"`
+	Remote        remote   `json:"remote"`
+	CPR           cpr      `json:"cpr"`
 	AltSuppressed int      `json:"altitude_suppressed"`
-	Tracks        Tracks   `json:"tracks"`
+	Tracks        tracks   `json:"tracks"`
 	Messages      int      `json:"messages"`
 }
 
-type Local struct {
+type local struct {
 	SamplesProcessed int     `json:"sample_processed"`
 	SamplesDropped   int     `json:"samples_dropped"`
 	ModeAC           int     `json:"modeac"`
@@ -35,7 +35,7 @@ type Local struct {
 	StrongSignals    int     `json:"strong_signals"`
 }
 
-type Remote struct {
+type remote struct {
 	ModeAC      int   `json:"modeac"`
 	Modes       int   `json:"modes"`
 	Bad         int   `json:"bad"`
@@ -44,7 +44,7 @@ type Remote struct {
 	Requests    int   `json:"http_requests"`
 }
 
-type CPR struct {
+type cpr struct {
 	Surface        int `json:"surface"`
 	Airborne       int `json:"airborne"`
 	GlobalOK       int `json:"global_ok"`
@@ -61,7 +61,7 @@ type CPR struct {
 	Filtered       int `json:"filtered"`
 }
 
-type Tracks struct {
+type tracks struct {
 	All           int `json:"all"`
 	SingleMessage int `json:"single_message"`
 }
