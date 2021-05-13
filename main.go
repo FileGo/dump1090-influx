@@ -14,8 +14,17 @@ import (
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 )
 
-func readData(u *url.URL, httpClient *http.Client) (map[string]stats, error) {
-	resp, err := httpClient.Get(u.String())
+type config struct {
+	dump1090URL  *url.URL
+	influxURL    *url.URL
+	influxToken  string
+	influxOrg    string
+	influxBucket string
+	pollTime     time.Duration
+}
+
+func readData(cfg *config, httpClient *http.Client) (map[string]stats, error) {
+	resp, err := httpClient.Get(cfg.dump1090URL.String())
 	if err != nil {
 		return nil, fmt.Errorf("cannot retrieve HTTP data: %v", err)
 	}
@@ -39,8 +48,8 @@ func readData(u *url.URL, httpClient *http.Client) (map[string]stats, error) {
 	return data, nil
 }
 
-func writeData(data map[string]stats, iClient influxdb2.Client, database string) {
-	writeAPI := iClient.WriteAPIBlocking("", database)
+func writeData(data map[string]stats, iClient influxdb2.Client, cfg *config) error {
+	writeAPI := iClient.WriteAPIBlocking(cfg.influxOrg, cfg.influxBucket)
 
 	for key, row := range data {
 		p := influxdb2.NewPoint(key, map[string]string{"unit": "random"},
@@ -49,7 +58,7 @@ func writeData(data map[string]stats, iClient influxdb2.Client, database string)
 				"messages":                row.Messages,
 				"local_samples_processed": row.Local.SamplesProcessed,
 				"local_samples_dropped":   row.Local.SamplesDropped,
-				"local_modead":            row.Local.ModeAC,
+				"local_modeac":            row.Local.ModeAC,
 				"local_modes":             row.Local.ModeS,
 				"local_bad":               row.Local.Bad,
 				"local_unknown_icao":      row.Local.UnknownICAO,
@@ -77,23 +86,31 @@ func writeData(data map[string]stats, iClient influxdb2.Client, database string)
 			},
 			time.Now())
 
-		writeAPI.WritePoint(context.Background(), p)
+		err := writeAPI.WritePoint(context.Background(), p)
+		if err != nil {
+			return fmt.Errorf("cannot write point: %v", err)
+		}
 	}
+
+	return nil
 }
 
 func main() {
+	cfg := config{}
+
 	// Parse parameters
-	dump1090URL, _ := url.Parse("http://fr24.in.sffreak.com/dump1090/data/stats.json")
-	influxURL, _ := url.Parse("http://dockerhost.in.sffreak.com:8086")
-	influxToken := ""
-	influxDB := "dump1090"
-	pollTime, _ := time.ParseDuration("10s")
+	cfg.dump1090URL, _ = url.Parse("http://localhost/dump1090/data/stats.json")
+	cfg.influxURL, _ = url.Parse("http://localhost:8086")
+	cfg.influxToken = ""
+	cfg.influxOrg = ""
+	cfg.influxBucket = "dump1090"
+	cfg.pollTime, _ = time.ParseDuration("10s")
 
 	if os.Getenv("HOST") != "" {
 		if u, err := url.Parse(os.Getenv("HOST")); err != nil {
 			log.Fatalf("%s is not a valid URL, quitting...", os.Getenv("HOST"))
 		} else {
-			dump1090URL = u
+			cfg.dump1090URL = u
 		}
 	}
 
@@ -101,42 +118,49 @@ func main() {
 		if u, err := url.Parse(os.Getenv("INFLUX_URL")); err != nil {
 			log.Fatalf("%s is not a valid InfluxDB URL, quitting...", os.Getenv("INFLUX_URL"))
 		} else {
-			influxURL = u
+			cfg.influxURL = u
 		}
 	}
 
 	if os.Getenv("INFLUX_TOKEN") != "" {
-		influxToken = os.Getenv("INFLUX_TOKEN")
+		cfg.influxToken = os.Getenv("INFLUX_TOKEN")
 	}
 
-	if os.Getenv("INFLUX_DB") != "" {
-		influxDB = os.Getenv("INFLUX_DB")
+	if os.Getenv("INFLUX_ORG") != "" {
+		cfg.influxOrg = os.Getenv("INFLUX_ORG")
+	}
+
+	if os.Getenv("INFLUX_BUCKET") != "" {
+		cfg.influxBucket = os.Getenv("INFLUX_BUCKET")
 	}
 
 	if os.Getenv("POLL_TIME") != "" {
 		var err error
-		pollTime, err = time.ParseDuration(os.Getenv("POLL_TIME"))
+		cfg.pollTime, err = time.ParseDuration(os.Getenv("POLL_TIME"))
 		if err != nil {
 			log.Fatalf("Unable to parse duration: %v", err)
 		}
 	}
 
 	// Set up InfluxDB
-	iClient := influxdb2.NewClient(influxURL.String(), influxToken)
+	iClient := influxdb2.NewClient(cfg.influxURL.String(), cfg.influxToken)
 	defer iClient.Close()
 
 	log.Println("Program started")
 
 	for {
 		go func() {
-			data, err := readData(dump1090URL, http.DefaultClient)
+			data, err := readData(&cfg, http.DefaultClient)
 			if err != nil {
-				log.Printf("Cannot read data: %v\n", err)
+				log.Printf("cannot read data: %v", err)
 			}
 
-			writeData(data, iClient, influxDB)
+			err = writeData(data, iClient, &cfg)
+			if err != nil {
+				log.Printf("cannot write data: %v", err)
+			}
 		}()
 
-		time.Sleep(pollTime)
+		time.Sleep(cfg.pollTime)
 	}
 }

@@ -12,10 +12,12 @@ services:
     dump1090-influx:
         container_name: dump1090-influx
         build: .
+        restart: unless_stopped
         environment:
             - HOST=http://localhost/dump1090/data/stats.json
             - INFLUX_URL=http://localhost:8086
             - INFLUX_TOKEN=
-            - INFLUX_DB=dump1090
+            - INFLUX_ORG=
+            - INFLUX_BUCKET=dump1090 # Database name for InfluxDB v1
             - POLL_TIME=10s
 ```
