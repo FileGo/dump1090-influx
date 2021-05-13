@@ -37,6 +37,10 @@ func testingHTTPClient(handler http.Handler, options ...bool) (*http.Client, fun
 func TestReadData(t *testing.T) {
 	assert := assert.New(t)
 
+	testCfg := config{
+		dump1090URL: &url.URL{Scheme: "http", Host: "example.com"},
+	}
+
 	t.Run("pass", func(t *testing.T) {
 		h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 			f, err := os.Open("./testdata/valid.json")
@@ -50,7 +54,7 @@ func TestReadData(t *testing.T) {
 		client, teardown := testingHTTPClient(h)
 		defer teardown()
 
-		_, err := readData(&url.URL{Scheme: "http", Host: "example.com"}, client)
+		_, err := readData(&testCfg, client)
 		assert.Nil(err)
 	})
 
@@ -59,7 +63,7 @@ func TestReadData(t *testing.T) {
 		client, teardown := testingHTTPClient(nil, true)
 		defer teardown()
 
-		_, err := readData(&url.URL{Scheme: "http", Host: "example.com"}, client)
+		_, err := readData(&testCfg, client)
 		if assert.NotNil(err) {
 			assert.Contains(err.Error(), "retrieve")
 		}
@@ -73,7 +77,7 @@ func TestReadData(t *testing.T) {
 		client, teardown := testingHTTPClient(h)
 		defer teardown()
 
-		_, err := readData(&url.URL{Scheme: "http", Host: "example.com"}, client)
+		_, err := readData(&testCfg, client)
 		if assert.NotNil(err) {
 			assert.Contains(err.Error(), "HTTP error code")
 		}
@@ -87,7 +91,7 @@ func TestReadData(t *testing.T) {
 		client, teardown := testingHTTPClient(h)
 		defer teardown()
 
-		_, err := readData(&url.URL{Scheme: "http", Host: "example.com"}, client)
+		_, err := readData(&testCfg, client)
 		if assert.NotNil(err) {
 			assert.Contains(err.Error(), "unmarshal json")
 		}
