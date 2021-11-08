@@ -1,6 +1,6 @@
 # dump1090-influx
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/FileGo/dump1090-influx)](https://goreportcard.com/report/github.com/FileGo/dump1090-influx) ![build](https://github.com/FileGo/dump1090-influx/workflows/build/badge.svg) ![tests](https://github.com/FileGo/dump1090-influx/workflows/tests/badge.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/FileGo/dump1090-influx)](https://goreportcard.com/report/github.com/FileGo/dump1090-influx) ![build](https://github.com/FileGo/dump1090-influx/workflows/build/badge.svg) ![tests](https://github.com/FileGo/dump1090-influx/workflows/tests/badge.svg) ![docker](https://img.shields.io/docker/pulls/filego/dump1090-influx.svg)
 
 This program periodically retrieves JSON data from [dump1090-mutability](https://github.com/adsbxchange/dump1090-mutability) and stores it in InfluxDB.
 
